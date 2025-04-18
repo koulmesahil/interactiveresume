@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stick Figure Portfolio World</title>
+    <title>Interactive Resume</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
         body {
@@ -67,21 +67,43 @@
             user-select: none;
             touch-action: manipulation;
         }
-        .project-modal {
+        #project-modal {
             position: fixed;
-            top: 50%;
+            top: 5%;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.9);
-            border: 2px solid white;
-            border-radius: 10px;
-            padding: 20px;
-            max-width: 80%;
-            max-height: 80vh;
-            overflow-y: auto;
-            z-index: 100;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 700px;
+            padding: 2rem;
+            background: rgba(20, 20, 30, 0.95);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            z-index: 999;
             display: none;
+            flex-direction: column;
+            gap: 1rem;
+            animation: modalSlideFade 0.6s ease forwards;
+            overflow: auto;
         }
+
+        /* Animation */
+        @keyframes modalSlideFade {
+            0% {
+                transform: translate(-50%, -50%) scale(0.7);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, 0%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Class trigger */
+        .modal-show {
+            animation: modalSlideFade 0.6s ease forwards;
+        }
+
         .close-btn {
             position: absolute;
             top: 10px;
@@ -92,16 +114,40 @@
             font-size: 20px;
             cursor: pointer;
         }
-        .instructions {
+        .instructions-toggle {
             position: fixed;
             top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 6;
+            touch-action: manipulation;
+            line-height: 1; /* Fix vertical centering */
+            font-family: Arial, sans-serif; /* Helps with baseline issues */
+        }
+
+
+        .instructions {
+            position: fixed;
+            top: 80px;
             left: 20px;
             background-color: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 5px;
             font-size: 14px;
+            color: white;
             z-index: 5;
         }
+
         @media (max-width: 768px) {
             #mobile-controls {
                 display: flex;
@@ -117,15 +163,24 @@
         <!-- Game will be rendered here by p5.js -->
     </div>
     
-    <div class="instructions">
+    <div class="instructions-toggle" id="instructions-toggle">❓</div>
+
+    <div class="instructions" id="instructions-box" style="display: none;">
         <p>Use arrow keys to move, space to jump</p>
-        <p>Enter buildings to view projects</p>
-        <p>Find cave entrances to explore underground</p>
+        <p>Enter buildings using ▲ to view projects</p>
+        <p>Use the sewer sytem to explore underground and ladder to climb back up</p>
+        <p>
+            <a href="https://koulmesahil.github.io/" target="_blank" style="color: #5af; text-decoration: none;">GitHub</a> | 
+            <a href="https://www.linkedin.com/in/sahilkoul123/" target="_blank" style="color: #5af; text-decoration: none;">LinkedIn</a>
+        </p>
     </div>
+    
     
     <div id="mobile-controls">
         <div class="control-btn" id="left-btn">◀</div>
         <div class="control-btn" id="right-btn">▶</div>
+        <div class="control-btn" id="up-btn">▲</div>
+
     </div>
     <div class="jump-btn" id="jump-btn">JUMP</div>
     
@@ -158,11 +213,17 @@
         let currentArea = "surface"; // "surface" or "underground"
         let cameraX = 0;
         let cameraY = 0;
+        //adding this for the project details 
+        let projectModalOpen = false;
+        let projectModalOpenTime = 0;
+        let currentProjectType = null;
+
         
         // Mobile controls state
         let leftPressed = false;
         let rightPressed = false;
         let jumping = false;
+        let upPressed = false;
         
         // Background colors
         let surfaceSkyColor;
@@ -171,65 +232,67 @@
         // Projects data
         const projects = {
             "webdev": {
-                title: "Web Development Projects",
+                title: "Artificial Intelligence Applications",
                 content: `
-                    <h3>Project 1: E-commerce Platform</h3>
-                    <p>A full-stack e-commerce solution with React and Node.js</p>
-                    <p>Features: User authentication, product catalog, shopping cart, payment integration</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
-                    
-                    <h3>Project 2: Weather Dashboard</h3>
-                    <p>Interactive weather application using modern web technologies</p>
-                    <p>Features: Real-time updates, location-based forecasts, animated visualizations</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project 1: BreatheCalm AI – Adaptive Meditation App</h3>
+                    <p>Built with Streamlit, Python, OpenAI API, and Hugging Face models (including Mistral)</p>
+                    <p>Features: Personalized breathing and meditation suggestions, mood-based recommendations, intuitive UI</p>
+                    <a href="https://breathecalmai.streamlit.app/" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 2: Wardrobe Wizard – Fashion Forecasting Hub</h3>
+                    <p>Implemented using Streamlit, OpenAI, Mistral AI models, and weather API integration</p>
+                    <p>Features: Outfit recommendations based on weather, visual output generation, personalized fashion guidance</p>
+                    <a href="https://huggingface.co/spaces/koulsahil/FashionForecaster" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 3: VoyageGPT – AI-Powered Trip Planner</h3>
+                    <p>Developed using Python, Streamlit, and OpenAI’s GPT models</p>
+                    <p>Features: Natural language processing, prompt engineering, dynamic data integration, personalized itinerary generation</p>
+                    <a href="https://travelplaningchatbot.streamlit.app/" style="color: #5af; text-decoration: none;">View Project</a>
                 `
             },
             "mobile": {
-                title: "Mobile App Development",
+                title: "Advanced Machine Learning",
                 content: `
-                    <h3>Project 1: Fitness Tracker</h3>
-                    <p>Cross-platform mobile application built with React Native</p>
-                    <p>Features: Activity tracking, workout plans, progress statistics</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project 1: Land Cover Classification using Satellite Images</h3>
+                    <p>Developed with TensorFlow and Streamlit</p>
+                    <p>Model: Pre-trained VGG16 neural network on EuroSAT dataset, deployed on Hugging Face</p>
+                    <p>Features: Real-time satellite image classification, image upload, interactive prediction display</p>
+                    <a href="https://landcoverclassification.streamlit.app/" style="color: #5af; text-decoration: none;">View Project</a>
                     
-                    <h3>Project 2: Travel Companion</h3>
-                    <p>Location-based travel app with offline capabilities</p>
-                    <p>Features: Map integration, point of interest search, trip planning</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project 2: Regulatory Report Checker</h3>
+                    <p>Built with NLP techniques for SEC filing analysis</p>
+                    <p>Features: Information extraction from 10-K/13F documents, structured output of regulatory obligations, risks, and violations</p>
+                    <a href="https://huggingface.co/spaces/koulsahil/Regulatory_Document_Analyzer" style="color: #5af; text-decoration: none;">View Project</a>
                 `
             },
             "game": {
-                title: "Game Development",
+                title: "Data Visualization",
                 content: `
-                    <h3>Project 1: Platformer Adventure</h3>
-                    <p>A 2D platformer game built with Unity and C#</p>
-                    <p>Features: Multiple levels, character progression, physics puzzles</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
-                    
-                    <h3>Project 2: Puzzle Collection</h3>
-                    <p>A series of brain-teasing puzzles created with JavaScript</p>
-                    <p>Features: Progressive difficulty, score tracking, unique mechanics</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project 1: Bike Rides Visualization</h3>
+                    <p>Created using Tableau</p>
+                    <p>Features: Analysis of bike-sharing trends, ride frequency metrics, and operational insights</p>
+                    <a href="https://public.tableau.com/app/profile/sahil.koul/viz/BikeRidesVisualization/LondonBikeDataset" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 2: Netflix Content Dashboard</h3>
+                    <p>Created using Tableau</p>
+                    <p>Features: Visualization of content ratings, genre distribution, and viewer engagement patterns</p>
+                    <a href="https://public.tableau.com/app/profile/sahil.koul/viz/NetflixDashboard_17074404564070/Netflix" style="color: #5af; text-decoration: none;">View Project</a>
                 `
             },
             "design": {
-                title: "UI/UX Design Portfolio",
+                title: "Data Analysis",
                 content: `
-                    <h3>Project 1: Banking App Redesign</h3>
-                    <p>Complete UX overhaul of a banking application</p>
-                    <p>Tools: Figma, Adobe XD, User research methods</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
-                    
-                    <h3>Project 2: E-learning Platform</h3>
-                    <p>Educational interface design focusing on accessibility</p>
-                    <p>Tools: Sketch, InVision, User testing</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project: Analyzing Unicorn Companies</h3>
+                    <p>Conducted entirely using SQL</p>
+                    <p>Features: ROI analysis, time to unicorn status, geographic and industry-based distribution, top investors</p>
+                    <p>Dataset: 1060 unicorn companies from Maven Analytics</p>
+                    <a href="https://github.com/koulmesahil/analysis_of_unicorn_companies_using_SQL/blob/main/Analysis%20of%20Unicorn%20Companies.pdf" style="color: #5af; text-decoration: none;">View Report</a>
                 `
             },
             "ai": {
-                title: "AI & Machine Learning Projects",
+                title: "Behind the code",
                 content: `
-                    <h3>Project 1: Natural Language Processing Tool</h3>
+                    <h3>Project 1: Documentation process</h3>
                     <p>Text analysis and sentiment prediction tool using machine learning</p>
                     <p>Technologies: TensorFlow, BERT, Python NLP libraries</p>
                     <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
@@ -241,17 +304,23 @@
                 `
             },
             "blockchain": {
-                title: "Blockchain Development",
+                title: "More Games",
                 content: `
-                    <h3>Project 1: Decentralized Application</h3>
-                    <p>A DApp for secure document verification and storage</p>
-                    <p>Technologies: Ethereum, Solidity, Web3.js</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
-                    
-                    <h3>Project 2: NFT Marketplace</h3>
-                    <p>Platform for creating, buying and selling digital assets</p>
-                    <p>Technologies: IPFS, Smart Contracts, React</p>
-                    <a href="#" style="color: #5af; text-decoration: none;">View Project</a>
+                    <h3>Project 1: BreatheCalm</h3>
+                    <p>Features: Animated breathing exercises, interactive toggles, adaptive visuals, minimalist UI</p>
+                    <a href="https://koulmesahil.github.io/BreatheCalm/" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 2: Camel Quest</h3>
+                    <p>Features: Obstacle course gameplay, reflex-based navigation, dynamic terrain</p>
+                    <a href="https://koulmesahil.github.io/camelquest/" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 3: Bioluminescent Ocean</h3>
+                    <p>Features: Interactive ocean simulation, glowing wave animations, generative art inspired by nature</p>
+                    <a href="https://koulmesahil.github.io/bioluminescent_ocean/" style="color: #5af; text-decoration: none;">View Project</a>
+
+                    <h3>Project 4: Draw a Circle Game</h3>
+                    <p>Features: Freehand circle drawing accuracy test, real-time visual feedback</p>
+                    <a href="https://koulmesahil.github.io/bioluminescent_ocean/" style="color: #5af; text-decoration: none;">View Project</a>
                 `
             }
         };
@@ -298,6 +367,12 @@
             } else if (currentArea === "underground") {
                 cameraY = lerp(cameraY, player.y - height/2, 0.05);
             }
+
+            if (currentProjectType) {
+                const building = buildings.find(b => b.projectType === currentProjectType);
+                if (building) checkProjectModalDistance(building);
+            }
+
             
             // Apply camera transformation
             push();
@@ -321,14 +396,14 @@
         // Setup the game environment
         function setupEnvironment() {
             // Create buildings that represent different project categories
-            buildings.push(new Building(500, world.groundLevel - 140, 200, 150, "webdev", "Web Dev"));
-            buildings.push(new Building(900, world.groundLevel - 120, 180, 120, "mobile", "Mobile Apps"));
-            buildings.push(new Building(1400, world.groundLevel - 145, 220, 170, "game", "Games"));
-            buildings.push(new Building(1900, world.groundLevel - 140, 190, 140, "design", "UI/UX"));
+            buildings.push(new Building(500, world.groundLevel - 140, 200, 150, "webdev", "🤖 AI"));
+            buildings.push(new Building(900, world.groundLevel - 120, 180, 120, "mobile", "🧠 ML"));
+            buildings.push(new Building(1400, world.groundLevel - 145, 220, 170, "game", "📊 Data Viz"));
+            buildings.push(new Building(1900, world.groundLevel - 140, 190, 140, "design", "🔬 ETL"));
             
             // Create underground buildings
-            undergroundBuildings.push(new UndergroundBuilding(700, world.undergroundLevel - 120, 180, 120, "ai", "AI Projects", color(100, 50, 200)));
-            undergroundBuildings.push(new UndergroundBuilding(1600, world.undergroundLevel - 140, 200, 140, "blockchain", "Blockchain", color(50, 200, 150)));
+            undergroundBuildings.push(new UndergroundBuilding(700, world.undergroundLevel - 120, 180, 120, "ai", "🎬 Making Of", color(100, 50, 200)));
+            undergroundBuildings.push(new UndergroundBuilding(1600, world.undergroundLevel - 140, 200, 140, "blockchain", "🎮 More Games", color(50, 200, 150)));
             
             // Create decorative trees
             for (let i = 0; i < 15; i++) {
@@ -519,6 +594,13 @@
                 // Underground floor
                 fill(40, 20, 60);
                 rect(world.boundaries.left, world.undergroundLevel, world.boundaries.right - world.boundaries.left, 30);
+
+
+                
+
+
+
+                
             }
             
             // Check for falling out of the world
@@ -789,7 +871,7 @@
             
             display() {
                 push();
-                translate(this.x, this.y);
+                translate(this.x, this.y+50);
                 
                 // Add glow effect when underground
                 if (currentArea === "underground") {
@@ -866,6 +948,8 @@
             this.doorOpen = false;
             this.doorOpenTime = 0;
             this.playerInside = false;
+            this.postBoxInteraction = false;
+            this.postBoxInteractionTime = 0;
         }
 
         update() {
@@ -876,11 +960,32 @@
             } else if (millis() - this.doorOpenTime > 2000) {
                 this.doorOpen = false;
             }
+            
+            // Post box interaction
+            const postBoxX = this.x - this.width/2 + 20;
+            const postBoxY = this.y + this.height/2 - 20;
+            const distanceToPostBox = dist(player.x, player.y, postBoxX, postBoxY);
+            
+            if (distanceToPostBox < 40) {
+                this.postBoxInteraction = true;
+                this.postBoxInteractionTime = millis();
+            } else if (millis() - this.postBoxInteractionTime > 3000) {
+                this.postBoxInteraction = false;
+            }
         }
 
         display() {
             rectMode(CENTER);
             noStroke();
+
+            // === Simple Lawn ===
+            // Base ground
+            fill(130, 70, 40);
+            rect(this.x, this.y + this.height/2 + 45, this.width + 120, 10);
+            
+            // Simple lawn
+            fill(80, 140, 70);
+            rect(this.x, this.y + this.height/2 + 30, this.width + 100, 30);
 
             // === Shadow Base ===
             fill(50, 50, 50, 50);
@@ -888,14 +993,15 @@
 
             // === Building Body (soft vertical gradient) ===
             for (let i = -this.height / 2; i < this.height / 2; i += 10) {
-                fill(195 - i * 0.2, 190 - i * 0.2, 175 - i * 0.2);
+                fill(150 - i * 0.1, 100 - i * 0.07, 60 - i * 0.05); // Warm brownish wood tone
                 rect(this.x, this.y + i + 5, this.width, 10);
             }
 
             // === Roof ===
+
             fill(120, 50, 50);
             stroke(80, 30, 30);
-            strokeWeight(2);
+            strokeWeight(0);
             triangle(
                 this.x - this.width / 2, this.y - this.height / 2,
                 this.x + this.width / 2, this.y - this.height / 2,
@@ -934,14 +1040,88 @@
                 noStroke();
                 rect(this.x + offset - 4, this.y - 22, 8, 12, 2);
             }
+            
+            // === Post Box (simpler) ===
+            const postBoxX = this.x - this.width/2 + 20;
+            const postBoxY = this.y + this.height/2 - 20;
+            
+            // Post box post/pole
+            fill(120, 100, 80);
+            rect(postBoxX, postBoxY + 15, 6, 30);
+            
+            // Post box body
+            fill(200, 60, 40);
+            stroke(160, 40, 30);
+            strokeWeight(2);
+            rect(postBoxX, postBoxY, 26, 20, 4);
+            
+            // Post box flag
+            fill(60, 180, 75);
+            noStroke();
+            beginShape();
+            vertex(postBoxX + 15, postBoxY - 10);
+            vertex(postBoxX + 15, postBoxY - 25);
+            vertex(postBoxX + 25, postBoxY - 20);
+            vertex(postBoxX + 15, postBoxY - 15);
+            endShape(CLOSE);
+            stroke(40, 40, 40);
+            strokeWeight(1.5);
+            line(postBoxX + 15, postBoxY - 10, postBoxX + 15, postBoxY + 5);
+            
+            // Post box mail slot
+            fill(40, 40, 40);
+            noStroke();
+            rect(postBoxX, postBoxY - 5, 20, 4, 1);
+            
+            // If player interacts with post box, display label
+            if (this.postBoxInteraction) {
+                push();
+                translate(postBoxX, postBoxY - 35);
+                
+                // Refined envelope background
+                fill(250, 250, 240);
+                stroke(100, 100, 100);
+                strokeWeight(0);
+                rect(0, 0, 80, 50, 5); // wider envelope with rounded corners
+                noStroke();
+                
+                // Clean envelope details
+                // Top flap
+                fill(240, 240, 230);
+                beginShape();
+                vertex(-40, -25);
+                vertex(0, -10);
+                vertex(40, -25);
+                endShape();
 
-            // === Label Sign ===
-            fill(0, 0, 0, 180);
-            rect(this.x, this.y - this.height / 2 - 30, this.width * 0.6, 30, 5);
-            fill(255);
-            textSize(14);
-            textAlign(CENTER, CENTER);
-            text(this.label, this.x, this.y - this.height / 2 - 30);
+                
+                // Side flaps outline
+                stroke(200, 200, 200);
+                strokeWeight(0.5);
+                line(-20, 0, -10, 5);
+                line(20, 0, 10, 5);
+                noStroke();
+                
+                // Red stamp
+                fill(200, 60, 40);
+                noStroke();
+                rect(30, -15, 12, 16, 2);
+                //rect(30, -15, 10, 3, 1); // stamp highlight
+                
+                // Stamp details
+                fill(255, 255, 255, 180);
+                rect(18, -8, 6, 2, 0.5);
+                
+                // Label text on clean background
+                fill(40, 40, 80);
+                textAlign(CENTER, CENTER);
+                textSize(12);
+                textStyle(BOLD);
+                text(this.label, 0, 4); // recenter
+                textStyle(NORMAL);
+                
+                pop();
+            }
 
             rectMode(CORNER);
         }
@@ -1380,7 +1560,8 @@
                     abs(player.x - this.x) < 20 &&
                     player.y > this.yTop - 50 &&
                     player.y < this.yBottom &&
-                    keyIsDown(UP_ARROW)
+                    (keyIsDown(UP_ARROW) || upPressed)
+
                 );
             }
         }
@@ -1567,25 +1748,63 @@
             }
         }
         
-        // Open project modal
         function openProjectModal(projectType) {
             if (!projects[projectType]) return;
-            
+
             const modal = document.getElementById('project-modal');
             const title = document.getElementById('project-title');
             const content = document.getElementById('project-content');
-            
+
+            title.innerText = '';
+            content.innerHTML = '';
+
             title.innerText = projects[projectType].title;
             content.innerHTML = projects[projectType].content;
-            
-            modal.style.display = 'block';
+
+            modal.classList.remove('modal-show');
+            void modal.offsetWidth;
+            modal.classList.add('modal-show');
+
+            modal.style.display = 'flex';
+
+            // Save state
+            projectModalOpen = true;
+            projectModalOpenTime = millis();
+            currentProjectType = projectType;
         }
+
+        function checkProjectModalDistance(building) {
+            const distance = abs(player.x - building.x);
+            const verticalInRange = player.y > building.y - 50 && player.y < building.y + building.height;
+
+            if (distance < 50 && verticalInRange) {
+                projectModalOpenTime = millis(); // reset timer if still close
+            } else if (projectModalOpen && millis() - projectModalOpenTime > 2000) {
+                closeProjectModal();
+            }
+        }
+
+
+        function closeProjectModal() {
+            const modal = document.getElementById('project-modal');
+            modal.style.display = 'none';
+
+            projectModalOpen = false;
+            currentProjectType = null;
+        }
+
+
+
         
         // Setup mobile controls
         function setupMobileControls() {
             const leftBtn = document.getElementById('left-btn');
             const rightBtn = document.getElementById('right-btn');
             const jumpBtn = document.getElementById('jump-btn');
+            const upBtn = document.getElementById('up-btn');
+            const toggleBtn = document.getElementById('instructions-toggle');
+            const instructionsBox = document.getElementById('instructions-box');
+
             const closeModalBtn = document.getElementById('close-modal');
             
             // Touch controls for movement
@@ -1597,10 +1816,17 @@
             
             jumpBtn.addEventListener('touchstart', () => { jumping = true; });
             jumpBtn.addEventListener('touchend', () => { jumping = false; });
+
+            upBtn.addEventListener('touchstart', () => { upPressed = true; });
+            upBtn.addEventListener('touchend', () => { upPressed = false; });
             
             // Close modal button
             closeModalBtn.addEventListener('click', () => {
                 document.getElementById('project-modal').style.display = 'none';
+            });
+            toggleBtn.addEventListener('click', () => {
+                instructionsBox.style.display =
+                    instructionsBox.style.display === 'none' ? 'block' : 'none';
             });
             
             // Also handle mouse clicks for testing on desktop
@@ -1609,6 +1835,9 @@
             
             rightBtn.addEventListener('mousedown', () => { rightPressed = true; });
             rightBtn.addEventListener('mouseup', () => { rightPressed = false; });
+
+            upBtn.addEventListener('mousedown', () => { upPressed = true; });
+            upBtn.addEventListener('mouseup', () => { upPressed = false; });
             
             jumpBtn.addEventListener('mousedown', () => { jumping = true; });
             jumpBtn.addEventListener('mouseup', () => { jumping = false; });
@@ -1623,8 +1852,8 @@
         
         // Handle keyboard events
         function keyPressed() {
-            // Access building when pressing 'E' near a building
-            if (keyCode === 69) { // 'E' key
+            // Access building when pressing 'upbutton' near a building or jumping
+            if (keyCode === ENTER) { // 'E' key
                 for (let building of buildings) {
                     if (abs(player.x - building.x) < 50) {
                         openProjectModal(building.projectType);
@@ -1638,6 +1867,7 @@
                 }
             }
         }
+        
     </script>
 </body>
 </html>
